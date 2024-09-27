@@ -15,7 +15,7 @@ use crate::daemon::funcs::{close, switch_gui};
 
 const CSS: &str = r#"
 .client-image {
-    margin: 15px;
+    margin: 2px;
 }
 .client-index {
     margin: 6px;
@@ -60,7 +60,7 @@ window {
 lazy_static! {
     static ref SIZE_FACTOR: i16 =option_env!("SIZE_FACTOR").map_or(7, |s| s.parse().expect("Failed to parse SIZE_FACTOR"));
     static ref ICON_SIZE: i32 =option_env!("ICON_SIZE").map_or(128, |s| s.parse().expect("Failed to parse ICON_SIZE"));
-    static ref ICON_SCALE: i32 =option_env!("ICON_SCALE").map_or(1, |s| s.parse().expect("Failed to parse ICON_SCALE"));
+    static ref ICON_SCALE: i32 =option_env!("ICON_SCALE").map_or(2, |s| s.parse().expect("Failed to parse ICON_SCALE"));
     static ref NEXT_INDEX_MAX: i32 = option_env!("NEXT_INDEX_MAX").map_or(5, |s| s.parse().expect("Failed to parse NEXT_INDEX_MAX"));
     static ref WORKSPACES_PER_ROW: u32 = option_env!("WORKSPACES_PER_ROW").map_or(5, |s| s.parse().expect("Failed to parse WORKSPACES_PER_ROW"));
 }
@@ -137,15 +137,16 @@ fn client_ui(client: &Client, client_active: bool, show_title: bool, index: i32,
 
     let overlay = Overlay::builder().child(&picture).build();
 
-    if enabled && *NEXT_INDEX_MAX != 0 && index <= *NEXT_INDEX_MAX && index >= -(*NEXT_INDEX_MAX) {
-        let label = Label::builder().css_classes(vec!["client-index"]).label(index.to_string()).halign(Align::End).valign(Align::End).build();
-        overlay.add_overlay(&label)
-    }
+    // if enabled && *NEXT_INDEX_MAX != 0 && index <= *NEXT_INDEX_MAX && index >= -(*NEXT_INDEX_MAX) {
+    //     let label = Label::builder().css_classes(vec!["client-index"]).label(index.to_string()).halign(Align::End).valign(Align::End).build();
+    //     overlay.add_overlay(&label)
+    // }
 
     let title = if show_title && !client.title.trim().is_empty() { &client.title } else { &client.class };
     let label = Label::builder().overflow(Overflow::Visible).margin_start(6).ellipsize(pango::EllipsizeMode::End).label(title).build();
 
-    let client_frame = Frame::builder().css_classes(vec!["client"]).label_xalign(0.5).label_widget(&label).child(&overlay).build();
+    // let client_frame = Frame::builder().css_classes(vec!["client"]).label_xalign(0.5).label_widget(&label).child(&overlay).build();
+    let client_frame = Frame::builder().css_classes(vec!["client"]).child(&overlay).build();
 
     if client_active {
         client_frame.add_css_class("client_active");
@@ -174,14 +175,17 @@ fn update(
     let mut workspaces = data.1.workspace_data.iter().filter(|(_, v)| v.monitor == *monitor_id).collect::<Vec<_>>();
     workspaces.sort_by(|a, b| a.0.cmp(b.0));
 
-    for workspace in workspaces {
+    // for workspace in workspaces {
+    let workspace = workspaces[0];
         let width = (workspace.1.width / *SIZE_FACTOR as u16) as i32;
         let height = (workspace.1.height / *SIZE_FACTOR as u16) as i32;
 
-        let clients = data.1.clients.iter().filter(|client| client.monitor == *monitor_id && client.workspace.id == *workspace.0).collect::<Vec<_>>();
+        // let clients = data.1.clients.iter().filter(|client| client.monitor == *monitor_id && client.workspace.id == *workspace.0).collect::<Vec<_>>();
+    let clients = data.1.clients.iter().collect::<Vec<_>>();
 
-        let workspace_fixed = Fixed::builder().width_request(width).height_request(height).build();
-        let workspace_frame = Frame::builder().css_classes(vec!["workspace"]).label(&workspace.1.name).label_xalign(0.5).child(&workspace_fixed).build();
+    let workspace_fixed = Fixed::builder().width_request(width).height_request(height).build();
+    // let workspace_frame = Frame::builder().css_classes(vec!["workspace"]).label(&workspace.1.name).label_xalign(0.5).child(&workspace_fixed).build();
+    let workspace_frame = Frame::builder().css_classes(vec!["workspace"]).child(&workspace_fixed).build();
 
         if *workspace.0 < 0 {
             // special workspace
@@ -226,11 +230,17 @@ fn update(
                 index - selected_index.unwrap_or(0) as i32,
                 data.1.enabled_clients.iter().any(|c| c.address == client.address),
             );
-            let x = ((client.at.0 - workspace.1.x as i16) / *SIZE_FACTOR) as f64;
-            let y = ((client.at.1 - workspace.1.y as i16) / *SIZE_FACTOR) as f64;
-            let width = (client.size.0 / *SIZE_FACTOR) as i32;
-            let height = (client.size.1 / *SIZE_FACTOR) as i32;
+            // let x = ((client.at.0 - workspace.1.x as i16) / *SIZE_FACTOR) as f64;
+            // let y = ((client.at.1 - workspace.1.y as i16) / *SIZE_FACTOR) as f64;
+            let client_size = *ICON_SIZE as i32;
+            let x = (index * client_size) as f64;
+            let y = 0.0;
+            // let width = (client.size.0 / *SIZE_FACTOR) as i32;
+            // let height = (client.size.1 / *SIZE_FACTOR) as i32;
+            let width = client_size;
+            let height = client_size;
             frame.set_size_request(width, height);
+            // workspace_fixed.put(&frame, x, y);
             workspace_fixed.put(&frame, x, y);
             // debug!("Client {} at {}, {}", client.title, x, y);
             // debug!("AA {}, {}", client.at.0,  workspace.1.x);
@@ -255,7 +265,7 @@ fn update(
         }
 
         workspaces_flow.insert(&workspace_frame, -1);
-    }
+    // }
 
     Ok(())
 }
