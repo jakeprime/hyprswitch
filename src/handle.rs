@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::OnceLock};
+use std::{collections::{HashMap, HashSet}, sync::OnceLock};
 
 use anyhow::Context;
 use hyprland::{
@@ -177,7 +177,10 @@ pub async fn collect_data(config: Config) -> anyhow::Result<(ClientsData, Option
     if config.ignore_monitors {
         clients = update_clients(clients, None, Some(&monitor_data));
     }
-    
+
+    if (!config.filter_same_class) {
+        clients = unique_by_class(clients);
+    }
 
     let active = Client::get_active_async().await?;
 
@@ -200,6 +203,19 @@ pub async fn collect_data(config: Config) -> anyhow::Result<(ClientsData, Option
         workspace_data,
         monitor_data,
     }, active_address))
+}
+
+fn unique_by_class(clients: Vec<Client>) -> Vec<Client> {
+    let mut seen_classes = HashSet::new();
+    let mut unique_clients = Vec::new();
+
+    for client in clients {
+        if seen_classes.insert(client.class.clone()) {
+            unique_clients.push(client);
+        }
+    }
+
+    unique_clients
 }
 
 fn get_recent_clients_map() -> &'static Mutex<HashMap<Address, i8>> {
