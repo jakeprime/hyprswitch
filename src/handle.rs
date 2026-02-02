@@ -5,7 +5,7 @@ use hyprland::{
     data::{Client, Clients, Monitors, Workspaces},
     dispatch::{
         Dispatch,
-        DispatchType::{BringActiveToTop, FocusWindow, ToggleSpecialWorkspace, Workspace},
+        DispatchType::{BringActiveToTop, FocusWindow, ToggleFloating, ToggleSpecialWorkspace, Workspace},
         WindowIdentifier, WorkspaceIdentifierWithSpecial,
     },
     prelude::*,
@@ -246,6 +246,9 @@ pub async fn switch_async(next_client: &Client, dry_run: bool) -> Result<(), Hyp
             next_client.address.clone(),
         ))).await?;
         Dispatch::call_async(BringActiveToTop).await?;
+        if !next_client.floating {
+            Dispatch::call_async(ToggleFloating(None)).await?;
+        }
     }
 
     Ok(())
