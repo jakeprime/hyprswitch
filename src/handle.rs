@@ -242,10 +242,19 @@ pub async fn switch_async(next_client: &Client, dry_run: bool) -> Result<(), Hyp
         }
     } else {
         info!("switch to next_client: {} ({})", next_client.title, next_client.class);
-        Dispatch::call_async(FocusWindow(WindowIdentifier::Address(
-            next_client.address.clone(),
-        ))).await?;
-        Dispatch::call_async(BringActiveToTop).await?;
+
+        std::process::Command::new("hyprctl")
+                .args([
+                    "eval",
+                    &format!(
+                            "hl.dispatch(hl.dsp.focus({{ window = 'address:{}' }}))",
+                            next_client.address.clone()
+                    ),
+                ])
+                .output()?;
+        std::process::Command::new("hyprctl")
+                .args(["eval", "hl.dispatch(hl.dsp.window.bring_to_top())"])
+                .output()?;
     }
 
     Ok(())
